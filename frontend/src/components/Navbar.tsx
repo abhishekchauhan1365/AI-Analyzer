@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { BrainCircuit, LayoutDashboard, Clock, LogOut } from 'lucide-react';
+import { BrainCircuit, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Navbar: React.FC = () => {

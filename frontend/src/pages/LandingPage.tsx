@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BrainCircuit, Upload, BarChart3, Shield, Zap, CheckCircle, ArrowRight, Star, ChevronDown, Quote, Search, FileText } from 'lucide-react';
+import { BrainCircuit, Upload, BarChart3, Shield, Zap, CheckCircle, ArrowRight, Star, ChevronDown, Quote, FileText } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const features = [
