@@ -13,6 +13,7 @@ import SkillBadge from '../components/SkillBadge';
 import SectionScore from '../components/SectionScore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DocumentChat from '../components/DocumentChat';
+import RewriteAssistant from '../components/RewriteAssistant';
 import { ArrowLeft, CheckCircle, XCircle, Lightbulb, Key, Target, Trash2, BrainCircuit, Clock, Download, Mail } from 'lucide-react';
 
 const CHART_COLORS = ['#18181b', '#3f3f46', '#52525b', '#71717a', '#a1a1aa'];
@@ -255,7 +256,10 @@ const AnalysisPage: React.FC = () => {
             {result.weaknesses.map((w, i) => (
               <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ color: 'var(--color-warning)', fontWeight: 700, marginTop: 1, flexShrink: 0 }}>!</span>
-                <span style={{ fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--color-text-muted)' }}>{w}</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--color-text-muted)' }}>{w}</span>
+                  <RewriteAssistant originalText={w} />
+                </div>
               </li>
             ))}
           </ul>

@@ -144,37 +144,53 @@ export const analyzeResume = async (resumeText) => {
         return getMockResult();
     }
 };
-export const chatWithContext = async (documentText, userMessage) => {
+export const streamChatWithContext = async function* (documentText, messages) {
     if (!process.env.GEMINI_API_KEY) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        return "I am a mock response because no API key is configured. You asked: " + userMessage;
+        yield "I am a mock streaming response because no API key is configured. You asked: ";
+        yield messages[messages.length - 1].content;
+        return;
     }
     try {
         const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const model = genAI.models;
-        const prompt = `
-You are an expert HR assistant and resume reviewer. You are helping a user understand a document (usually a resume or job description).
-Use the following document text to answer the user's question accurately. Keep your answer concise, professional, and directly related to the document.
+        // Convert our internal message format to Gemini's format
+        // And inject the document text into the very first system-like instruction
+        const formattedContents = messages.map((msg, index) => {
+            let text = msg.content;
+            // Inject document context into the FIRST user message
+            if (index === 0 && msg.role === 'user') {
+                text = `You are an expert HR assistant and resume reviewer. You are helping a user understand a document (usually a resume or job description).
+Use the following document text to answer the user's questions accurately. Keep your answers concise, professional, and directly related to the document.
 
 DOCUMENT TEXT:
 ---
 ${documentText}
 ---
 
-USER QUESTION: ${userMessage}
-`;
-        const response = await model.generateContent({
+USER QUESTION: ${msg.content}`;
+            }
+            // Gemini roles are 'user' and 'model'
+            return {
+                role: msg.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text }]
+            };
+        });
+        const responseStream = await model.generateContentStream({
             model: 'gemini-3.5-flash-lite',
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: formattedContents,
             config: {
                 temperature: 0.5,
             },
         });
-        return response.text ?? 'I could not generate a response.';
+        for await (const chunk of responseStream) {
+            if (chunk.text) {
+                yield chunk.text;
+            }
+        }
     }
     catch (error) {
-        console.error('[GeminiService] Error in chatWithContext:', error);
-        throw new Error('Failed to generate chat response');
+        console.error('[GeminiService] Error in streamChatWithContext:', error);
+        yield "Sorry, I encountered an error while trying to answer that.";
     }
 };
 //# sourceMappingURL=geminiService.js.map
