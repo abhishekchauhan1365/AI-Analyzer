@@ -1,6 +1,7 @@
 {
   "name": "ai-analyzer-root",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "cd backend && npm install && npm run build && cd ../frontend && npm install && npm run build"
   },
