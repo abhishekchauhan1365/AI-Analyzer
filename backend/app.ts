@@ -72,6 +72,10 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/auth', authRoutes);
 app.use('/api/analyses', analysisRoutes);
 
+// Fallback routes in case VITE_API_URL was set without the /api suffix
+app.use('/auth', authRoutes);
+app.use('/analyses', analysisRoutes);
+
 
 
 app.use(notFound);
