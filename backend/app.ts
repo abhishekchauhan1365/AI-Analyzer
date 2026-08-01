@@ -10,6 +10,22 @@ import analysisRoutes from './routes/analysisRoutes.js';
 
 const app = express();
 
+import mongoose from 'mongoose';
+let isConnected = false;
+app.use(async (req, res, next) => {
+  if (isConnected) return next();
+  try {
+    if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI missing');
+    await mongoose.connect(process.env.MONGODB_URI);
+    isConnected = true;
+    console.log('MongoDB Connected via middleware');
+    next();
+  } catch (err) {
+    console.error('DB Error:', err);
+    res.status(500).json({ success: false, message: 'Database connection failed' });
+  }
+});
+
 app.use(helmet());
 
 const limiter = rateLimit({
