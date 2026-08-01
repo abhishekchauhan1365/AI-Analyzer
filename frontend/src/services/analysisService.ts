@@ -37,7 +37,8 @@ export const analysisService = {
   },
 
   streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[]): AsyncGenerator<string, void, unknown> {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/analyses/${id}/chat`, {
+    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+    const response = await fetch(`${baseUrl}/analyses/${id}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

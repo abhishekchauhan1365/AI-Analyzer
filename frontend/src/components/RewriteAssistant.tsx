@@ -21,8 +21,8 @@ const RewriteAssistant: React.FC<RewriteAssistantProps> = ({ originalText }) => 
     setIsOpen(true);
     setIsLoading(true);
     try {
-      // Call the standalone Microservice
-      const res = await fetch(`${import.meta.env.VITE_API_URL.replace('/api', '')}/api/rewrite`, {
+      const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+      const res = await fetch(`${baseUrl.replace('/api', '')}/api/rewrite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
