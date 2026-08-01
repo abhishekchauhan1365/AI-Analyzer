@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { analysisService } from '../services/analysisService';
+import { useAuth } from '../hooks/useAuth';
 
-interface Message {
+export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -14,7 +15,8 @@ interface DocumentChatProps {
 }
 
 const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
-  const [messages, setMessages] = useState<Message[]>([
+  const { token } = useAuth();
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
@@ -35,36 +37,43 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !token) return;
 
-    const userMsg: Message = {
+    const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    // The full history to send to backend (including new user message)
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
+    // Create an empty assistant message that will be populated via stream
+    const assistantId = (Date.now() + 1).toString();
+    setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+
     try {
-      const { reply } = await analysisService.chat(analysisId, userMsg.content);
+      // Map to the format expected by the backend
+      const historyPayload = newMessages.map(m => ({ role: m.role, content: m.content }));
       
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: reply,
-      };
+      const stream = analysisService.streamChat(analysisId, historyPayload, token);
       
-      setMessages((prev) => [...prev, aiMsg]);
+      let fullText = '';
+      for await (const chunk of stream) {
+        fullText += chunk;
+        setMessages((prev) => 
+          prev.map((msg) => msg.id === assistantId ? { ...msg, content: fullText } : msg)
+        );
+        scrollToBottom();
+      }
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error while trying to answer that. Please try again.',
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => 
+        prev.map((msg) => msg.id === assistantId ? { ...msg, content: 'Sorry, I encountered an error while trying to answer that. Please try again.' } : msg)
+      );
     } finally {
       setIsLoading(false);
     }

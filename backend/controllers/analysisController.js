@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { Analysis } from '../models/Analysis.js';
 import { extractTextFromPDF } from '../services/pdfService.js';
-import { analyzeResume } from '../services/geminiService.js';
+import { analyzeResume, chatWithContext } from '../services/geminiService.js';
 import { getCache, setCache, deleteCache } from '../services/cacheService.js';
 import { AppError } from '../utils/AppError.js';
 // Multer config — memory storage (no disk I/O)
@@ -159,6 +159,35 @@ export const deleteAnalysis = async (req, res, next) => {
         await deleteCache(`analysis:${id}`);
         await deleteCache(`analyses:user:${userId}`);
         res.json({ success: true, message: 'Analysis deleted successfully.' });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+// @desc    Chat with a specific document
+// @route   POST /api/analyses/:id/chat
+// @access  Private
+export const chatWithDocument = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { message } = req.body;
+        const userId = req.user._id.toString();
+        if (!message) {
+            return next(new AppError('Message is required', 400));
+        }
+        // Explicitly select textContent so we can use it for chat
+        const analysis = await Analysis.findOne({ _id: id, userId }).select('+textContent');
+        if (!analysis) {
+            return next(new AppError('Analysis not found.', 404));
+        }
+        if (analysis.status !== 'completed' || !analysis.textContent) {
+            return next(new AppError('Document is not ready for chat yet.', 400));
+        }
+        const reply = await chatWithContext(analysis.textContent, message);
+        res.json({
+            success: true,
+            data: { reply },
+        });
     }
     catch (error) {
         next(error);

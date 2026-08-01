@@ -144,4 +144,37 @@ export const analyzeResume = async (resumeText) => {
         return getMockResult();
     }
 };
+export const chatWithContext = async (documentText, userMessage) => {
+    if (!process.env.GEMINI_API_KEY) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return "I am a mock response because no API key is configured. You asked: " + userMessage;
+    }
+    try {
+        const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const model = genAI.models;
+        const prompt = `
+You are an expert HR assistant and resume reviewer. You are helping a user understand a document (usually a resume or job description).
+Use the following document text to answer the user's question accurately. Keep your answer concise, professional, and directly related to the document.
+
+DOCUMENT TEXT:
+---
+${documentText}
+---
+
+USER QUESTION: ${userMessage}
+`;
+        const response = await model.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                temperature: 0.5,
+            },
+        });
+        return response.text ?? 'I could not generate a response.';
+    }
+    catch (error) {
+        console.error('[GeminiService] Error in chatWithContext:', error);
+        throw new Error('Failed to generate chat response');
+    }
+};
 //# sourceMappingURL=geminiService.js.map

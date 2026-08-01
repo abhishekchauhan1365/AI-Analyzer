@@ -3,7 +3,7 @@ import multer from 'multer';
 import type { AuthRequest } from '../middlewares/authMiddleware.js';
 import { Analysis } from '../models/Analysis.js';
 import { extractTextFromPDF } from '../services/pdfService.js';
-import { analyzeResume, chatWithContext } from '../services/geminiService.js';
+import { analyzeResume, streamChatWithContext } from '../services/geminiService.js';
 import { getCache, setCache, deleteCache } from '../services/cacheService.js';
 import { AppError } from '../utils/AppError.js';
 
@@ -209,7 +209,7 @@ export const deleteAnalysis = async (
   }
 };
 
-// @desc    Chat with a specific document
+// @desc    Chat with a specific document (Streaming)
 // @route   POST /api/analyses/:id/chat
 // @access  Private
 export const chatWithDocument = async (
@@ -219,14 +219,13 @@ export const chatWithDocument = async (
 ) => {
   try {
     const { id } = req.params;
-    const { message } = req.body;
+    const { messages } = req.body;
     const userId = req.user!._id.toString();
 
-    if (!message) {
-      return next(new AppError('Message is required', 400));
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return next(new AppError('Messages array is required', 400));
     }
 
-    // Explicitly select textContent so we can use it for chat
     const analysis = await Analysis.findOne({ _id: id as string, userId }).select('+textContent');
 
     if (!analysis) {
@@ -237,13 +236,25 @@ export const chatWithDocument = async (
       return next(new AppError('Document is not ready for chat yet.', 400));
     }
 
-    const reply = await chatWithContext(analysis.textContent, message);
+    // Set up Server-Sent Events (SSE)
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
-    res.json({
-      success: true,
-      data: { reply },
-    });
+    const stream = streamChatWithContext(analysis.textContent, messages);
+
+    for await (const chunk of stream) {
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
   } catch (error) {
-    next(error);
+    // If headers are already sent, we can't use next(error) properly for JSON response
+    // So we just close the stream with an error message
+    console.error('Streaming error:', error);
+    res.write(`data: ${JSON.stringify({ error: 'An error occurred during generation.' })}\n\n`);
+    res.end();
   }
 };

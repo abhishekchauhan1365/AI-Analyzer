@@ -36,8 +36,53 @@ export const analysisService = {
     await api.delete(`/analyses/${id}`);
   },
 
-  chat: async (id: string, message: string): Promise<{reply: string}> => {
-    const res = await api.post<ApiResponse<{reply: string}>>(`/analyses/${id}/chat`, { message });
-    return res.data.data!;
+  streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[], token: string): AsyncGenerator<string, void, unknown> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/analyses/${id}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ messages }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Chat API failed: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('No readable stream in response body.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') {
+            return;
+          }
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+            if (parsed.text) {
+              yield parsed.text;
+            }
+          } catch (e) {
+            // Ignore parse errors on incomplete JSON chunks, wait for next buffer (this shouldn't happen with Server-Sent Events, but just in case)
+          }
+        }
+      }
+    }
   },
 };

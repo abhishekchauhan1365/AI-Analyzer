@@ -27,4 +27,5 @@ export declare const getAnalysisStatus: (req: AuthRequest, res: Response, next: 
  * Delete a user's analysis
  */
 export declare const deleteAnalysis: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const chatWithDocument: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 //# sourceMappingURL=analysisController.d.ts.map
