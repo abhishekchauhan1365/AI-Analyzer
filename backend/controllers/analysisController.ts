@@ -191,7 +191,7 @@ export const deleteAnalysis = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!._id as string;
+    const userId = req.user!._id.toString();
 
     const analysis = await Analysis.findOneAndDelete({ _id: id, userId });
 

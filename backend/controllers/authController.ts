@@ -21,7 +21,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     });
 
     if (user) {
-      generateToken(res, user._id as string);
+      generateToken(res, user._id.toString());
       res.status(201).json({
         success: true,
         data: {
@@ -46,7 +46,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.comparePassword(password))) {
-      generateToken(res, user._id as string);
+      generateToken(res, user._id.toString());
       res.json({
         success: true,
         data: {

@@ -4,7 +4,7 @@ import { Types } from 'mongoose';
 
 export const generateToken = (res: Response, userId: string | Types.ObjectId): string => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any,
   });
 
   res.cookie('jwt', token, {
