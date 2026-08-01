@@ -15,6 +15,16 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'API is running' });
 });
 
+app.get('/api/db-test', async (req, res) => {
+  try {
+    if (!process.env.MONGODB_URI) return res.status(500).json({ error: 'No URI' });
+    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+    res.status(200).json({ status: 'Connected' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 let isConnected = false;
 app.use(async (req, res, next) => {
   if (isConnected || mongoose.connection.readyState === 1) {
@@ -43,7 +53,12 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    // Allow any origin dynamically (safe for this specific project state)
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(express.json());

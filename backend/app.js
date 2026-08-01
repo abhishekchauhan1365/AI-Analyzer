@@ -12,6 +12,17 @@ import mongoose from 'mongoose';
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'API is running' });
 });
+app.get('/api/db-test', async (req, res) => {
+    try {
+        if (!process.env.MONGODB_URI)
+            return res.status(500).json({ error: 'No URI' });
+        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+        res.status(200).json({ status: 'Connected' });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
 let isConnected = false;
 app.use(async (req, res, next) => {
     if (isConnected || mongoose.connection.readyState === 1) {
