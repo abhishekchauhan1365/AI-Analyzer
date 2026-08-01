@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { BrainCircuit, LogOut, LayoutDashboard, History, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { BrainCircuit, LogOut, LayoutDashboard, History } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
