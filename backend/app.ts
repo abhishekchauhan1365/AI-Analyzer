@@ -11,9 +11,16 @@ import analysisRoutes from './routes/analysisRoutes.js';
 const app = express();
 
 import mongoose from 'mongoose';
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', message: 'API is running' });
+});
+
 let isConnected = false;
 app.use(async (req, res, next) => {
-  if (isConnected) return next();
+  if (isConnected || mongoose.connection.readyState === 1) {
+    isConnected = true;
+    return next();
+  }
   try {
     if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI missing');
     await mongoose.connect(process.env.MONGODB_URI);
@@ -22,7 +29,7 @@ app.use(async (req, res, next) => {
     next();
   } catch (err) {
     console.error('DB Error:', err);
-    res.status(500).json({ success: false, message: 'Database connection failed' });
+    next();
   }
 });
 
@@ -50,9 +57,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/auth', authRoutes);
 app.use('/api/analyses', analysisRoutes);
 
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', message: 'API is running' });
-});
+
 
 app.use(notFound);
 app.use(errorHandler);
