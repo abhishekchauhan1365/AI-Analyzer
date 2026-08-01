@@ -12,6 +12,7 @@ import ScoreRing from '../components/ScoreRing';
 import SkillBadge from '../components/SkillBadge';
 import SectionScore from '../components/SectionScore';
 import LoadingSpinner from '../components/LoadingSpinner';
+import DocumentChat from '../components/DocumentChat';
 import { ArrowLeft, CheckCircle, XCircle, Lightbulb, Key, Target, Trash2, BrainCircuit, Clock, Download, Mail } from 'lucide-react';
 
 const CHART_COLORS = ['#18181b', '#3f3f46', '#52525b', '#71717a', '#a1a1aa'];
@@ -116,7 +117,7 @@ const AnalysisPage: React.FC = () => {
   const sectionsList = Object.values(result.sections);
 
   return (
-    <div className="container" style={{ padding: '40px 24px', maxWidth: 1100 }}>
+    <div className="container" style={{ padding: '40px 24px', maxWidth: 1400 }}>
       {/* Back + Actions */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <Link to="/dashboard" className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -135,7 +136,10 @@ const AnalysisPage: React.FC = () => {
         </div>
       </div>
 
-      {/* File info */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 32, alignItems: 'start' }}>
+        {/* Left Column: Analysis Report */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* File info */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: '1.6rem', marginBottom: 6 }}>{currentAnalysis.fileName}</h1>
         <p className="text-muted" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -319,6 +323,13 @@ const AnalysisPage: React.FC = () => {
             These keywords were found in your resume and help pass ATS filters. Make sure they match the job description.
           </p>
         </motion.div>
+        </div>
+      </div>
+
+        {/* Right Column: Chat Interface */}
+        <div style={{ position: 'sticky', top: 90, height: 'calc(100vh - 120px)' }}>
+          <DocumentChat analysisId={id!} />
+        </div>
       </div>
     </div>
   );

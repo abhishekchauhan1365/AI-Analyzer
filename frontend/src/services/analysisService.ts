@@ -35,4 +35,9 @@ export const analysisService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/analyses/${id}`);
   },
+
+  chat: async (id: string, message: string): Promise<{reply: string}> => {
+    const res = await api.post<ApiResponse<{reply: string}>>(`/analyses/${id}/chat`, { message });
+    return res.data.data!;
+  },
 };
