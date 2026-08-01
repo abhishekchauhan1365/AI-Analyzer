@@ -36,13 +36,13 @@ export const analysisService = {
     await api.delete(`/analyses/${id}`);
   },
 
-  streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[], token: string): AsyncGenerator<string, void, unknown> {
+  streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[]): AsyncGenerator<string, void, unknown> {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/analyses/${id}/chat`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ messages }),
     });
 

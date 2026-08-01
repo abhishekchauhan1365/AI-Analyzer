@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Sparkles, Loader2, Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../hooks/useAuth';
 
 interface RewriteAssistantProps {
   originalText: string;
 }
 
 const RewriteAssistant: React.FC<RewriteAssistantProps> = ({ originalText }) => {
-  const { token } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rewrites, setRewrites] = useState<string[]>([]);
@@ -27,9 +25,9 @@ const RewriteAssistant: React.FC<RewriteAssistantProps> = ({ originalText }) => 
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('/api', '')}/api/rewrite`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ text: originalText })
       });
       

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { analysisService } from '../services/analysisService';
-import { useAuth } from '../hooks/useAuth';
 
 export interface ChatMessage {
   id: string;
@@ -15,7 +14,6 @@ interface DocumentChatProps {
 }
 
 const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
-  const { token } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -37,7 +35,7 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !token) return;
+    if (!input.trim() || isLoading) return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -59,7 +57,7 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
       // Map to the format expected by the backend
       const historyPayload = newMessages.map(m => ({ role: m.role, content: m.content }));
       
-      const stream = analysisService.streamChat(analysisId, historyPayload, token);
+      const stream = analysisService.streamChat(analysisId, historyPayload);
       
       let fullText = '';
       for await (const chunk of stream) {
