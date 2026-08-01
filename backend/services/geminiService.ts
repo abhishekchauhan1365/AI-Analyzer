@@ -167,7 +167,7 @@ export interface ChatMessage {
 export const streamChatWithContext = async function* (documentText: string, messages: ChatMessage[]): AsyncGenerator<string, void, unknown> {
   if (!process.env.GEMINI_API_KEY) {
     yield "I am a mock streaming response because no API key is configured. You asked: ";
-    yield messages[messages.length - 1].content;
+    yield messages[messages.length - 1]?.content || '';
     return;
   }
 
