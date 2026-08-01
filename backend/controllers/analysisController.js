@@ -26,7 +26,7 @@ export const uploadAndAnalyze = async (req, res, next) => {
         if (!req.file) {
             return next(new AppError('Please upload a PDF file.', 400));
         }
-        const userId = req.user._id;
+        const userId = req.user._id.toString();
         const { originalname, size, buffer } = req.file;
         // Create analysis record with pending status
         const analysis = await Analysis.create({
@@ -70,7 +70,7 @@ export const uploadAndAnalyze = async (req, res, next) => {
  */
 export const getMyAnalyses = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user._id.toString();
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(20, parseInt(req.query.limit) || 10);
         const cacheKey = `analyses:user:${userId}:page:${page}`;
@@ -108,7 +108,7 @@ export const getMyAnalyses = async (req, res, next) => {
 export const getAnalysisById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const userId = req.user._id;
+        const userId = req.user._id.toString();
         const cacheKey = `analysis:${id}`;
         const cached = await getCache(cacheKey);
         if (cached) {
@@ -132,7 +132,7 @@ export const getAnalysisById = async (req, res, next) => {
 export const getAnalysisStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const userId = req.user._id;
+        const userId = req.user._id.toString();
         const analysis = await Analysis.findOne({ _id: id, userId }).select('status errorMessage fileName createdAt result');
         if (!analysis) {
             return next(new AppError('Analysis not found.', 404));

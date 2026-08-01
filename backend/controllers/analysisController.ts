@@ -34,7 +34,7 @@ export const uploadAndAnalyze = async (
       return next(new AppError('Please upload a PDF file.', 400));
     }
 
-    const userId = req.user!._id as string;
+    const userId = req.user!._id.toString();
     const { originalname, size, buffer } = req.file;
 
     // Create analysis record with pending status
@@ -86,7 +86,7 @@ export const getMyAnalyses = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!._id as string;
+    const userId = req.user!._id.toString();
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(20, parseInt(req.query.limit as string) || 10);
     const cacheKey = `analyses:user:${userId}:page:${page}`;
@@ -132,7 +132,7 @@ export const getAnalysisById = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!._id as string;
+    const userId = req.user!._id.toString();
     const cacheKey = `analysis:${id}`;
 
     const cached = await getCache(cacheKey);
@@ -140,7 +140,7 @@ export const getAnalysisById = async (
       return res.json({ success: true, data: cached });
     }
 
-    const analysis = await Analysis.findOne({ _id: id, userId }).select('-textContent');
+    const analysis = await Analysis.findOne({ _id: id as string, userId }).select('-textContent');
 
     if (!analysis) {
       return next(new AppError('Analysis not found.', 404));
@@ -164,9 +164,9 @@ export const getAnalysisStatus = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!._id as string;
+    const userId = req.user!._id.toString();
 
-    const analysis = await Analysis.findOne({ _id: id, userId }).select(
+    const analysis = await Analysis.findOne({ _id: id as string, userId }).select(
       'status errorMessage fileName createdAt result'
     );
 
@@ -193,7 +193,7 @@ export const deleteAnalysis = async (
     const { id } = req.params;
     const userId = req.user!._id.toString();
 
-    const analysis = await Analysis.findOneAndDelete({ _id: id, userId });
+    const analysis = await Analysis.findOneAndDelete({ _id: id as string, userId });
 
     if (!analysis) {
       return next(new AppError('Analysis not found.', 404));
