@@ -21,7 +21,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     });
 
     if (user) {
-      generateToken(res, user._id.toString());
+      const token = generateToken(res, user._id.toString());
       res.status(201).json({
         success: true,
         data: {
@@ -29,7 +29,8 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
           name: user.name,
           email: user.email,
           role: user.role,
-        }
+        },
+        token: token,
       });
     } else {
       return next(new AppError('Invalid user data', 400));
@@ -46,7 +47,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.comparePassword(password))) {
-      generateToken(res, user._id.toString());
+      const token = generateToken(res, user._id.toString());
       res.json({
         success: true,
         data: {
@@ -54,7 +55,8 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
           name: user.name,
           email: user.email,
           role: user.role,
-        }
+        },
+        token: token,
       });
     } else {
       return next(new AppError('Invalid email or password', 401));
