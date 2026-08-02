@@ -33,16 +33,16 @@ export const useAnalysisStatus = (id: string, enabled: boolean) => {
   });
 };
 
-export const useUploadAnalysis = () => {
+export const useSubmitAnalysis = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
-      file,
+      payload,
       onProgress,
     }: {
-      file: File;
+      payload: { file?: File; text?: string; analysisType: string };
       onProgress?: (pct: number) => void;
-    }) => analysisService.upload(file, onProgress),
+    }) => analysisService.submitAnalysis(payload, onProgress),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ANALYSES_KEY });
     },

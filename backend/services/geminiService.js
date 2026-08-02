@@ -1,43 +1,132 @@
 import { GoogleGenAI } from '@google/genai';
-const ANALYSIS_PROMPT = (resumeText) => `
-You are an expert resume reviewer and ATS (Applicant Tracking System) specialist with 15+ years of experience in HR and talent acquisition.
-
-Analyze the following resume thoroughly and return a JSON object with this EXACT structure. Do not include any markdown, code fences, or extra text — return ONLY valid JSON.
-
+const PROMPTS = {
+    Resume: (text) => `
+You are an expert resume reviewer and ATS (Applicant Tracking System) specialist.
+Analyze the following resume thoroughly and return ONLY a JSON object with this EXACT structure:
 {
   "overallScore": <integer 0-100>,
   "atsScore": <integer 0-100>,
-  "summary": "<2-3 sentence professional summary of the candidate>",
+  "summary": "<2-3 sentence professional summary>",
   "estimatedYearsExperience": <number>,
-  "targetRoles": ["<role1>", "<role2>", "<role3>"],
-  "strengths": ["<strength1>", "<strength2>", "<strength3>", "<strength4>", "<strength5>"],
-  "weaknesses": ["<weakness1>", "<weakness2>", "<weakness3>"],
-  "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>", "<actionable suggestion 3>", "<actionable suggestion 4>", "<actionable suggestion 5>"],
-  "keywords": ["<keyword1>", "<keyword2>", "...up to 15 important keywords found"],
-  "skillCategories": [
-    { "category": "Technical Skills", "skills": ["skill1", "skill2", "..."] },
-    { "category": "Soft Skills", "skills": ["skill1", "skill2", "..."] },
-    { "category": "Tools & Platforms", "skills": ["tool1", "tool2", "..."] }
-  ],
+  "targetRoles": ["<role1>"],
+  "strengths": ["<strength1>"],
+  "weaknesses": ["<weakness1>"],
+  "suggestions": ["<suggestion1>"],
+  "keywords": ["<keyword1>"],
+  "skillCategories": [{ "category": "Technical", "skills": ["skill1"] }],
   "sections": {
-    "experience": { "name": "Work Experience", "score": <0-100>, "feedback": "<specific feedback>" },
-    "education": { "name": "Education", "score": <0-100>, "feedback": "<specific feedback>" },
-    "skills": { "name": "Skills", "score": <0-100>, "feedback": "<specific feedback>" },
-    "formatting": { "name": "Formatting & Structure", "score": <0-100>, "feedback": "<specific feedback>" },
-    "summary": { "name": "Professional Summary", "score": <0-100>, "feedback": "<specific feedback>" }
+    "experience": { "name": "Work Experience", "score": <0-100>, "feedback": "<feedback>" },
+    "education": { "name": "Education", "score": <0-100>, "feedback": "<feedback>" },
+    "skills": { "name": "Skills", "score": <0-100>, "feedback": "<feedback>" },
+    "formatting": { "name": "Formatting", "score": <0-100>, "feedback": "<feedback>" },
+    "summary": { "name": "Professional Summary", "score": <0-100>, "feedback": "<feedback>" }
   }
 }
-
-Scoring guide:
-- overallScore: Holistic quality of the resume (content, impact, relevance)
-- atsScore: How well it would pass automated screening (keywords, formatting, structure)
-- Section scores: Evaluate each section on completeness, clarity, and impact
-
 RESUME TEXT:
 ---
-${resumeText}
+${text}
 ---
-`;
+`,
+    Sentiment: (text) => `
+You are an expert sentiment analysis AI.
+Analyze the following text and return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing positivity>,
+  "sentiment": "<Positive | Negative | Neutral | Mixed>",
+  "summary": "<1-2 sentence explanation of the tone>",
+  "strengths": ["<positive phrases/aspects>"],
+  "weaknesses": ["<negative phrases/aspects>"],
+  "suggestions": ["<how to make it more positive/neutral>"],
+  "keywords": ["<key emotional words>"]
+}
+TEXT:
+---
+${text}
+---
+`,
+    Grammar: (text) => `
+You are an expert editor and grammarian.
+Analyze the following text for grammar, spelling, and structural issues. Return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing grammatical correctness>,
+  "summary": "<1-2 sentence summary of the writing quality>",
+  "strengths": ["<good grammatical aspects>"],
+  "weaknesses": ["<list of specific grammar/spelling errors found>"],
+  "suggestions": ["<how to fix the specific errors>"],
+  "keywords": ["<key stylistic terms>"]
+}
+TEXT:
+---
+${text}
+---
+`,
+    Readability: (text) => `
+You are an expert in readability and communication.
+Analyze the following text based on Flesch-Kincaid standards and general readability. Return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing readability (higher is easier)>,
+  "readabilityLevel": "<Elementary | Middle School | High School | College | Academic>",
+  "summary": "<1-2 sentence summary of how easy this is to read>",
+  "strengths": ["<aspects that aid readability>"],
+  "weaknesses": ["<complex sentences, jargon, passive voice>"],
+  "suggestions": ["<how to simplify the text>"],
+  "keywords": ["<key concepts found>"]
+}
+TEXT:
+---
+${text}
+---
+`,
+    Summarization: (text) => `
+You are an expert summarization AI.
+Read the following text and extract the most critical points. Return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing information density>,
+  "summary": "<1 paragraph executive summary of the entire text>",
+  "strengths": ["<key takeaway 1>", "<key takeaway 2>"],
+  "weaknesses": [],
+  "suggestions": ["<follow up question 1>", "<follow up question 2>"],
+  "keywords": ["<main topics>"]
+}
+TEXT:
+---
+${text}
+---
+`,
+    Tone: (text) => `
+You are an expert in communication tone and corporate communication.
+Analyze the tone of the text. Return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing professionalism>,
+  "detectedTone": "<Professional | Casual | Aggressive | Passive | Urgent | Persuasive>",
+  "summary": "<1-2 sentence summary of how the text comes across>",
+  "strengths": ["<effective tonal choices>"],
+  "weaknesses": ["<where the tone might fail or offend>"],
+  "suggestions": ["<how to adjust the tone for a professional audience>"],
+  "keywords": ["<words that drive the tone>"]
+}
+TEXT:
+---
+${text}
+---
+`,
+    'Code Review': (text) => `
+You are an expert Senior Software Engineer.
+Review the following code snippet for bugs, performance, security, and best practices. Return ONLY a JSON object with this EXACT structure:
+{
+  "overallScore": <integer 0-100 representing code quality>,
+  "summary": "<1-2 sentence summary of what the code does and its quality>",
+  "strengths": ["<good practices used>"],
+  "weaknesses": ["<bugs, vulnerabilities, or bad practices>"],
+  "suggestions": ["<actionable refactoring advice>"],
+  "keywords": ["<languages/frameworks detected>"]
+}
+CODE:
+---
+${text}
+---
+`
+};
 // Mock result for when no API key is configured
 const getMockResult = () => ({
     overallScore: 74,
@@ -110,7 +199,7 @@ const getMockResult = () => ({
         },
     },
 });
-export const analyzeResume = async (resumeText) => {
+export const analyzeText = async (text, analysisType = 'Resume') => {
     // Fall back to mock if no API key
     if (!process.env.GEMINI_API_KEY) {
         console.warn('[GeminiService] No GEMINI_API_KEY found. Returning mock analysis.');
@@ -120,10 +209,15 @@ export const analyzeResume = async (resumeText) => {
     try {
         const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const model = genAI.models;
-        console.log('[GeminiService] Making API request to gemini-3.5-flash-lite via SDK...');
+        console.log(`[GeminiService] Making API request to gemini-3.5-flash-lite via SDK for type: ${analysisType}...`);
+        const promptBuilder = PROMPTS[analysisType] || PROMPTS['Resume'];
+        if (!promptBuilder) {
+            throw new Error(`Invalid analysis type: ${analysisType}`);
+        }
+        const finalPrompt = promptBuilder(text);
         const response = await model.generateContent({
             model: 'gemini-3.5-flash-lite',
-            contents: [{ role: 'user', parts: [{ text: ANALYSIS_PROMPT(resumeText) }] }],
+            contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
             config: {
                 temperature: 0.3,
                 maxOutputTokens: 4096,
@@ -191,6 +285,56 @@ USER QUESTION: ${msg.content}`;
     catch (error) {
         console.error('[GeminiService] Error in streamChatWithContext:', error);
         yield "Sorry, I encountered an error while trying to answer that.";
+    }
+};
+export const generateJobMatch = async (resumeText, targetRole, jobDescriptionText) => {
+    if (!process.env.GEMINI_API_KEY) {
+        return {
+            matchScore: 65,
+            missingKeywords: ['Agile', 'GraphQL', 'AWS'],
+            tailoredSuggestions: ['Add metrics to your recent role.', 'Highlight leadership experience.'],
+        };
+    }
+    const roleOrJdContext = jobDescriptionText
+        ? `JOB DESCRIPTION:\n---\n${jobDescriptionText}\n---`
+        : `TARGET ROLE: ${targetRole}`;
+    const prompt = `
+You are an expert ATS (Applicant Tracking System) and technical recruiter. 
+Compare the provided Resume against the provided Job Description or Target Role.
+
+Calculate a match score from 0 to 100 representing how well this candidate fits the role.
+Extract a list of critical missing keywords that the ATS would look for but are absent in the resume.
+Provide 3-5 specific, tailored suggestions on how to modify the resume to increase the match score.
+
+Return ONLY a valid JSON object with the exact structure below. Do not use markdown fences.
+{
+  "matchScore": <integer 0-100>,
+  "missingKeywords": ["<keyword1>", "<keyword2>"],
+  "tailoredSuggestions": ["<suggestion1>", "<suggestion2>"]
+}
+
+${roleOrJdContext}
+
+RESUME TEXT:
+---
+${resumeText}
+---
+`;
+    try {
+        const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const model = genAI.models;
+        const response = await model.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: { temperature: 0.2 },
+        });
+        const rawText = response.text ?? '';
+        const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+        return JSON.parse(cleaned);
+    }
+    catch (error) {
+        console.error('[GeminiService] Error calling Gemini for Job Match:', error);
+        throw new Error('Failed to generate Job Match score');
     }
 };
 //# sourceMappingURL=geminiService.js.map

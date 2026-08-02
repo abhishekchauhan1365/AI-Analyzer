@@ -14,7 +14,7 @@ export const registerUser = async (req, res, next) => {
             password,
         });
         if (user) {
-            generateToken(res, user._id.toString());
+            const token = generateToken(res, user._id.toString());
             res.status(201).json({
                 success: true,
                 data: {
@@ -22,7 +22,8 @@ export const registerUser = async (req, res, next) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                }
+                },
+                token: token,
             });
         }
         else {
@@ -38,7 +39,7 @@ export const loginUser = async (req, res, next) => {
         const { email, password } = req.body;
         const user = await User.findOne({ email }).select('+password');
         if (user && (await user.comparePassword(password))) {
-            generateToken(res, user._id.toString());
+            const token = generateToken(res, user._id.toString());
             res.json({
                 success: true,
                 data: {
@@ -46,7 +47,8 @@ export const loginUser = async (req, res, next) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                }
+                },
+                token: token,
             });
         }
         else {

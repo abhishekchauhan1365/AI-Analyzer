@@ -6,22 +6,15 @@ export interface IAnalysisDoc extends Document {
   fileName: string;
   fileSize: number;
   mimeType: string;
+  analysisType: 'Resume' | 'Sentiment' | 'Grammar' | 'Readability' | 'Summarization' | 'Tone' | 'Code Review' | 'Custom';
+  inputType: 'pdf' | 'text';
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  result?: AnalysisResult;
+  result?: any;
   errorMessage?: string;
   textContent?: string;
   createdAt: Date;
   updatedAt: Date;
 }
-
-const sectionScoreSchema = new Schema(
-  {
-    name: String,
-    score: Number,
-    feedback: String,
-  },
-  { _id: false }
-);
 
 const analysisSchema = new Schema<IAnalysisDoc>(
   {
@@ -33,14 +26,26 @@ const analysisSchema = new Schema<IAnalysisDoc>(
     fileName: {
       type: String,
       required: true,
+      default: 'Text Input',
     },
     fileSize: {
       type: Number,
       required: true,
+      default: 0,
     },
     mimeType: {
       type: String,
-      default: 'application/pdf',
+      default: 'text/plain',
+    },
+    analysisType: {
+      type: String,
+      enum: ['Resume', 'Sentiment', 'Grammar', 'Readability', 'Summarization', 'Tone', 'Code Review', 'Custom'],
+      default: 'Resume',
+    },
+    inputType: {
+      type: String,
+      enum: ['pdf', 'text'],
+      default: 'text',
     },
     status: {
       type: String,
@@ -48,29 +53,7 @@ const analysisSchema = new Schema<IAnalysisDoc>(
       default: 'pending',
     },
     result: {
-      overallScore: Number,
-      atsScore: Number,
-      summary: String,
-      strengths: [String],
-      weaknesses: [String],
-      suggestions: [String],
-      keywords: [String],
-      estimatedYearsExperience: Number,
-      targetRoles: [String],
-      skillCategories: [
-        {
-          category: String,
-          skills: [String],
-          _id: false,
-        },
-      ],
-      sections: {
-        experience: sectionScoreSchema,
-        education: sectionScoreSchema,
-        skills: sectionScoreSchema,
-        formatting: sectionScoreSchema,
-        summary: sectionScoreSchema,
-      },
+      type: Schema.Types.Mixed,
     },
     errorMessage: String,
     textContent: {

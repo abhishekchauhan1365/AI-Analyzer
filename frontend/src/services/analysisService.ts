@@ -2,9 +2,18 @@ import api from './api';
 import type { ApiResponse, Analysis } from '../types';
 
 export const analysisService = {
-  upload: async (file: File, onProgress?: (pct: number) => void): Promise<Analysis> => {
+  submitAnalysis: async (
+    payload: { file?: File; text?: string; analysisType: string },
+    onProgress?: (pct: number) => void
+  ): Promise<Analysis> => {
     const formData = new FormData();
-    formData.append('resume', file);
+    if (payload.file) {
+      formData.append('resume', payload.file); // Keep field name as 'resume' to match multer.single('resume')
+    }
+    if (payload.text) {
+      formData.append('text', payload.text);
+    }
+    formData.append('analysisType', payload.analysisType);
 
     const res = await api.post<ApiResponse<Analysis>>('/analyses/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

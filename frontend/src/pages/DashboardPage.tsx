@@ -2,33 +2,40 @@ import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { useUploadAnalysis, useAnalyses, useAnalysisStatus } from '../hooks/useAnalysis';
-import { useDeleteAnalysis } from '../hooks/useAnalysis';
+import { useSubmitAnalysis, useAnalyses, useAnalysisStatus, useDeleteAnalysis } from '../hooks/useAnalysis';
 import { useQueryClient } from '@tanstack/react-query';
 import FileDropzone from '../components/FileDropzone';
 import AnalysisCard from '../components/AnalysisCard';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { BrainCircuit, TrendingUp, FileText, Clock, Sparkles, ArrowRight } from 'lucide-react';
+import Skeleton from '../components/Skeleton';
+import { BrainCircuit, TrendingUp, FileText, Clock, Sparkles, ArrowRight, MessageSquare, Briefcase, FileCode2, GraduationCap } from 'lucide-react';
+
+const ANALYSIS_OPTIONS = ['Resume', 'Sentiment', 'Grammar', 'Readability', 'Summarization', 'Tone', 'Code Review'];
+
+const SAMPLE_INPUTS = [
+  { label: 'Resume', icon: Briefcase, text: 'John Doe\nSoftware Engineer\nExperience:\n- Built a React app that scaled to 10k users.\n- Optimized MongoDB queries reducing latency by 40%.' },
+  { label: 'Email', icon: MessageSquare, text: 'Hey team, I think we should delay the launch by a week because the new feature is super buggy and I don\'t want to deal with angry customers. Let me know.' },
+  { label: 'Code', icon: FileCode2, text: 'function calc(a,b) {\n  return a+b;\n}\n// TODO: add type checks' },
+  { label: 'Essay', icon: GraduationCap, text: 'The industrial revolution and its consequences have been a disaster for the human race. They have greatly increased the life expectancy of those of us who live in advanced countries, but they have destabilized society.' }
+];
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState('');
+  
+  const [textInput, setTextInput] = useState('');
+  const [analysisType, setAnalysisType] = useState('Resume');
+  const [inputType, setInputType] = useState<'text' | 'file'>('text');
 
-  const uploadMutation = useUploadAnalysis();
+  const submitMutation = useSubmitAnalysis();
   const { data: analysesData, isLoading: listLoading } = useAnalyses(1);
   const deleteMutation = useDeleteAnalysis();
 
-  // Poll status of pending analysis
-  const { data: statusData } = useAnalysisStatus(
-    pendingId ?? '',
-    !!pendingId
-  );
-
+  const { data: statusData } = useAnalysisStatus(pendingId ?? '', !!pendingId);
   const queryClient = useQueryClient();
 
-  // When status completes, clear pending and refresh list
   React.useEffect(() => {
     if (statusData?.status === 'completed' || statusData?.status === 'failed') {
       setPendingId(null);
@@ -37,13 +44,29 @@ const DashboardPage: React.FC = () => {
     }
   }, [statusData?.status, queryClient]);
 
+  const handleSubmitText = async () => {
+    if (!textInput.trim()) {
+      setUploadError('Please enter some text to analyze.');
+      return;
+    }
+    setUploadError('');
+    try {
+      const result = await submitMutation.mutateAsync({
+        payload: { text: textInput, analysisType }
+      });
+      setPendingId(result._id);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Analysis failed');
+    }
+  };
+
   const handleFile = useCallback(
     async (file: File) => {
       setUploadError('');
       setUploadProgress(0);
       try {
-        const result = await uploadMutation.mutateAsync({
-          file,
+        const result = await submitMutation.mutateAsync({
+          payload: { file, analysisType },
           onProgress: setUploadProgress,
         });
         setPendingId(result._id);
@@ -52,7 +75,7 @@ const DashboardPage: React.FC = () => {
         setUploadProgress(0);
       }
     },
-    [uploadMutation]
+    [submitMutation, analysisType]
   );
 
   const handleDelete = useCallback(
@@ -66,7 +89,7 @@ const DashboardPage: React.FC = () => {
 
   const analyses = analysesData?.data ?? [];
   const recentAnalyses = analyses.slice(0, 5);
-  const isUploading = uploadMutation.isPending || (!!pendingId && statusData?.status === 'processing');
+  const isUploading = submitMutation.isPending || (!!pendingId && statusData?.status === 'processing');
 
   // Stats
   const completed = analyses.filter((a) => a.status === 'completed');
@@ -119,7 +142,7 @@ const DashboardPage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Upload section */}
+      {/* Input section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -127,21 +150,78 @@ const DashboardPage: React.FC = () => {
         className="glass-card"
         style={{ padding: 32, marginBottom: 36, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BrainCircuit size={18} color="#fff" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BrainCircuit size={18} color="#fff" />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: 2 }}>Analyze Content</h2>
+              <p className="text-muted" style={{ fontSize: '0.82rem' }}>Paste text or upload a document</p>
+            </div>
           </div>
-          <div>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 2 }}>Analyze a New Resume</h2>
-            <p className="text-muted" style={{ fontSize: '0.82rem' }}>PDF only · Max 5MB · Results in ~30s</p>
+          
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select 
+              value={analysisType}
+              onChange={(e) => setAnalysisType(e.target.value)}
+              className="input-field" 
+              style={{ padding: '8px 12px', width: 'auto', minWidth: 160 }}
+            >
+              {ANALYSIS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt} Analysis</option>)}
+            </select>
           </div>
         </div>
 
-        <FileDropzone
-          onFile={handleFile}
-          isUploading={isUploading}
-          uploadProgress={uploadProgress}
-        />
+        {/* Input Toggle */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'var(--color-bg-secondary)', padding: 4, borderRadius: 'var(--radius-md)', width: 'fit-content' }}>
+          <button onClick={() => setInputType('text')} className={`btn btn-sm ${inputType === 'text' ? 'btn-secondary' : 'btn-ghost'}`} style={{ border: inputType === 'text' ? undefined : 'none' }}>Paste Text</button>
+          <button onClick={() => setInputType('file')} className={`btn btn-sm ${inputType === 'file' ? 'btn-secondary' : 'btn-ghost'}`} style={{ border: inputType === 'file' ? undefined : 'none' }}>Upload File</button>
+        </div>
+
+        {inputType === 'text' ? (
+          <div>
+            <div style={{ marginBottom: 12, display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+              {SAMPLE_INPUTS.map(sample => (
+                <button 
+                  key={sample.label} 
+                  onClick={() => { setTextInput(sample.text); setAnalysisType(sample.label === 'Email' ? 'Tone' : sample.label === 'Code' ? 'Code Review' : sample.label === 'Essay' ? 'Grammar' : 'Resume'); }}
+                  className="btn btn-ghost btn-sm" 
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+                >
+                  <sample.icon size={14} /> {sample.label}
+                </button>
+              ))}
+            </div>
+            <textarea
+              className="input-field"
+              rows={8}
+              placeholder="Paste an email, resume, article, or code snippet here..."
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              disabled={isUploading}
+              style={{ resize: 'vertical', fontFamily: 'monospace', fontSize: '0.9rem' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                {textInput.length} chars · {textInput.split(/\s+/).filter(Boolean).length} words
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-ghost" onClick={() => setTextInput('')} disabled={isUploading || !textInput}>Clear</button>
+                <button className="btn btn-primary" onClick={handleSubmitText} disabled={isUploading || !textInput.trim()}>
+                  {isUploading ? <LoadingSpinner size={16} color="#fff" /> : <Sparkles size={16} />} 
+                  Analyze
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <FileDropzone
+            onFile={handleFile}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+          />
+        )}
 
         {uploadError && (
           <p className="error-message" style={{ marginTop: 12, textAlign: 'center' }}>⚠ {uploadError}</p>
@@ -165,9 +245,9 @@ const DashboardPage: React.FC = () => {
               <LoadingSpinner size={18} color="var(--color-primary)" />
               <div>
                 <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                  AI is analyzing your resume...
+                  AI is analyzing your content...
                 </p>
-                <p className="text-muted" style={{ fontSize: '0.78rem' }}>This typically takes 10–30 seconds</p>
+                <p className="text-muted" style={{ fontSize: '0.78rem' }}>Generating insights...</p>
               </div>
             </motion.div>
           )}
@@ -193,8 +273,17 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {listLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-            <LoadingSpinner size={32} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="glass-card" style={{ padding: '20px 24px', display: 'flex', gap: 16, alignItems: 'center' }}>
+                <Skeleton width={44} height={44} borderRadius={12} />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height={16} style={{ marginBottom: 6 }} />
+                  <Skeleton width="30%" height={12} />
+                </div>
+                <Skeleton width={40} height={30} />
+              </div>
+            ))}
           </div>
         ) : recentAnalyses.length === 0 ? (
           <div className="glass-card" style={{

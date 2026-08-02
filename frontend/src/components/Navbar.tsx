@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { BrainCircuit, LogOut, LayoutDashboard, History } from 'lucide-react';
+import { BrainCircuit, LogOut, LayoutDashboard, History, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Navbar: React.FC = () => {
@@ -103,6 +103,7 @@ const Navbar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginRight: 16 }}>
               <NavLink to="/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
               <NavLink to="/history" icon={History}>History</NavLink>
+              <NavLink to="/about" icon={Info}>About</NavLink>
             </div>
 
             <div style={{ width: 1, height: 24, background: 'var(--color-border)', margin: '0 8px' }} />
@@ -162,6 +163,13 @@ const Navbar: React.FC = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingRight: 12 }}>
+            <Link to="/about" style={{ 
+              textDecoration: 'none', color: 'var(--color-secondary)', 
+              fontWeight: 600, fontSize: '0.95rem',
+              transition: 'color 0.2s ease'
+            }} className="hover-text-primary">
+              About
+            </Link>
             <Link to="/login" style={{ 
               textDecoration: 'none', color: 'var(--color-secondary)', 
               fontWeight: 600, fontSize: '0.95rem',

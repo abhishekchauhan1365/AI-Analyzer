@@ -5,32 +5,32 @@ import { BrainCircuit, Upload, BarChart3, Shield, Zap, CheckCircle, ArrowRight, 
 import Navbar from '../components/Navbar';
 
 const features = [
-  { icon: Upload, title: 'Upload in Seconds', desc: 'Drag & drop your PDF resume. Supports up to 5MB.' },
-  { icon: BrainCircuit, title: 'Gemini AI Analysis', desc: 'Powered by Google Gemini for deep, human-like resume review.' },
-  { icon: BarChart3, title: 'Detailed Scoring', desc: 'Get scores on experience, skills, formatting, ATS compatibility and more.' },
-  { icon: Zap, title: 'Instant Results', desc: 'Full analysis ready in under 30 seconds with actionable suggestions.' },
+  { icon: Upload, title: 'Analyze Any Text', desc: 'Paste text, emails, code snippets, or upload documents up to 5MB.' },
+  { icon: BrainCircuit, title: 'Gemini AI Analysis', desc: 'Powered by Google Gemini for deep, context-aware intelligence.' },
+  { icon: BarChart3, title: 'Multi-Modal Insights', desc: 'Analyze Sentiment, Tone, Readability, Grammar, or even Code Quality.' },
+  { icon: Zap, title: 'Instant Results', desc: 'Full analysis ready in under 10 seconds with actionable suggestions.' },
   { icon: Shield, title: 'Secure & Private', desc: 'Your data is encrypted and never shared with third parties.' },
-  { icon: CheckCircle, title: 'ATS Optimized', desc: 'Find out how well your resume passes applicant tracking systems.' },
+  { icon: CheckCircle, title: 'Actionable Advice', desc: 'Get specific, actionable recommendations on how to improve your content.' },
 ];
 
 const stats = [
-  { value: '10K+', label: 'Resumes Analyzed' },
-  { value: '94%', label: 'User Satisfaction' },
-  { value: '30s', label: 'Average Analysis Time' },
+  { value: '50K+', label: 'Documents Analyzed' },
+  { value: '98%', label: 'Accuracy Rating' },
+  { value: '10s', label: 'Average Analysis Time' },
   { value: 'Free', label: 'To Get Started' },
 ];
 
 const testimonials = [
-  { quote: "AInalyzer pointed out exactly why my resume was getting rejected by ATS systems. I fixed the formatting and landed three interviews the next week!", author: "Sarah Jenkins", role: "Product Manager" },
-  { quote: "The feedback is incredibly specific. It's like having a senior recruiter sitting next to you and reviewing every bullet point.", author: "David Chen", role: "Software Engineer" },
-  { quote: "I love how fast and detailed it is. The 'Strengths & Weaknesses' section gave me exactly what I needed to refine my pitch.", author: "Elena Rodriguez", role: "Marketing Director" }
+  { quote: "AInalyzer helps me ensure my emails sound professional and not overly aggressive before I send them to the team.", author: "Sarah Jenkins", role: "Product Manager" },
+  { quote: "The code review feature is incredibly specific. It's like having a senior engineer sitting next to you and reviewing your logic.", author: "David Chen", role: "Software Engineer" },
+  { quote: "I love how fast and detailed it is. The grammar and readability analysis helps me refine my blog posts effortlessly.", author: "Elena Rodriguez", role: "Content Creator" }
 ];
 
 const faqs = [
-  { q: "Is AInalyzer really free?", a: "Yes! Creating an account and analyzing your resume is completely free. We believe everyone deserves access to top-tier career tools." },
-  { q: "Is my resume data safe?", a: "Absolutely. We use industry-standard encryption, and your data is never sold or shared with third parties. We strictly use it to generate your private analysis." },
-  { q: "How does the ATS score work?", a: "Our AI evaluates your resume against common Applicant Tracking System parsers, checking for standard formatting, keyword density, and structural readability." },
-  { q: "What formats do you support?", a: "Currently, we support standard PDF files up to 5MB. We recommend exporting your resume to PDF from Word or Google Docs to preserve formatting." }
+  { q: "Is AInalyzer really free?", a: "Yes! Creating an account and analyzing text is completely free. We believe everyone deserves access to top-tier AI tools." },
+  { q: "Is my data safe?", a: "Absolutely. We use industry-standard encryption, and your data is never sold or shared with third parties. We strictly use it to generate your private analysis." },
+  { q: "What types of analysis can I run?", a: "You can run Sentiment Analysis, Tone Check, Grammar & Spell Check, Readability Scoring, Code Review, Summarization, and Resume/ATS checks." },
+  { q: "What formats do you support?", a: "You can paste raw text directly into the app, or upload standard PDF documents up to 5MB." }
 ];
 
 const LandingPage: React.FC = () => {
@@ -61,22 +61,21 @@ const LandingPage: React.FC = () => {
             </div>
 
             <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: 24 }}>
-              Get Your Resume{' '}
-              <span className="gradient-text">AI-Analyzed</span>
-              <br />in 30 Seconds
+              Unlock the Power of{' '}
+              <span className="gradient-text">AI Text Analysis</span>
+              <br />in Seconds
             </h1>
 
             <p style={{
               fontSize: 'clamp(1rem, 2vw, 1.2rem)', color: 'var(--color-text-muted)',
               maxWidth: 580, margin: '0 auto 40px', lineHeight: 1.7,
             }}>
-              Upload your PDF resume and get a comprehensive AI analysis — scores, strengths,
-              weaknesses, ATS compatibility, and personalized suggestions to land your dream job.
+              Analyze text using AI to detect sentiment, readability, tone, risks, and actionable insights. Perfect for emails, essays, code, and resumes.
             </p>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/register" className="btn btn-primary btn-lg">
-                Analyze My Resume <ArrowRight size={18} />
+                Analyze Text <ArrowRight size={18} />
               </Link>
               <Link to="/login" className="btn btn-secondary btn-lg">Sign In</Link>
             </div>
@@ -102,7 +101,7 @@ const LandingPage: React.FC = () => {
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 8 }}>Overall Score</p>
                 </div>
                 <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[ { label: 'Work Experience', val: 88 }, { label: 'ATS Score', val: 76 }, { label: 'Skills Coverage', val: 82 } ].map(({ label, val }) => (
+                  {[ { label: 'Sentiment Score', val: 88 }, { label: 'Readability', val: 76 }, { label: 'Grammar', val: 92 } ].map(({ label, val }) => (
                     <div key={label}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                         <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{label}</span>
@@ -116,7 +115,7 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
               <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {['React', 'TypeScript', 'Node.js', 'Leadership', 'AWS', '+8 more'].map((s, i) => (
+                {['Positive', 'Professional', 'Clear', 'Actionable', 'Concise'].map((s, i) => (
                   <span key={i} className="badge badge-purple">{s}</span>
                 ))}
               </div>
@@ -149,9 +148,9 @@ const LandingPage: React.FC = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 60 }}>
             {[
-              { title: "1. Upload Your Resume", desc: "Drag and drop your PDF resume into our secure portal. We extract the text seamlessly without storing your sensitive documents long-term.", icon: Upload, align: 'right' },
-              { title: "2. Deep AI Analysis", desc: "Our advanced Gemini AI goes to work, reading your resume like a senior hiring manager. It cross-references your skills, experience, and formatting against industry standards.", icon: BrainCircuit, align: 'left' },
-              { title: "3. Actionable Insights", desc: "Receive a detailed, beautifully formatted dashboard with an overall score, ATS compatibility, top strengths, and specific areas for improvement.", icon: FileText, align: 'right' }
+              { title: "1. Input Your Content", desc: "Paste your text, email, essay, code, or upload a document directly into our secure portal.", icon: Upload, align: 'right' },
+              { title: "2. Deep AI Analysis", desc: "Our advanced Gemini AI goes to work. Choose from Sentiment, Tone, Grammar, Readability, or Code Review to get specific insights.", icon: BrainCircuit, align: 'left' },
+              { title: "3. Actionable Insights", desc: "Receive a detailed, beautifully formatted dashboard with scores, strengths, and specific areas for improvement.", icon: FileText, align: 'right' }
             ].map((step, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 40, flexDirection: step.align === 'left' ? 'row-reverse' : 'row' }}>
                 <div style={{ flex: '1 1 300px' }}>
@@ -174,7 +173,7 @@ const LandingPage: React.FC = () => {
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', marginBottom: 16 }}>Everything you need to stand out</h2>
-            <p style={{ color: 'var(--color-text-muted)', maxWidth: 500, margin: '0 auto', fontSize: '1rem' }}>Our AI gives you the same insight as a senior recruiter — in seconds.</p>
+            <p style={{ color: 'var(--color-text-muted)', maxWidth: 500, margin: '0 auto', fontSize: '1rem' }}>Our AI gives you deep insights — in seconds.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
             {features.map(({ icon: Icon, title, desc }, i) => (
@@ -194,8 +193,8 @@ const LandingPage: React.FC = () => {
       <section style={{ padding: '100px 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', marginBottom: 16 }}>Loved by Job Seekers</h2>
-            <p style={{ color: 'var(--color-text-muted)', maxWidth: 500, margin: '0 auto', fontSize: '1rem' }}>See how AInalyzer is helping people land their dream roles.</p>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', marginBottom: 16 }}>Loved by Everyone</h2>
+            <p style={{ color: 'var(--color-text-muted)', maxWidth: 500, margin: '0 auto', fontSize: '1rem' }}>See how AInalyzer is helping people write better.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             {testimonials.map((t, i) => (
@@ -243,8 +242,8 @@ const LandingPage: React.FC = () => {
         <div className="container">
           <motion.div initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} style={{ textAlign: 'center', padding: '64px 32px', borderRadius: 'var(--radius-xl)', background: 'var(--gradient-subtle)', border: '1px solid rgba(124,58,237,0.2)', boxShadow: 'var(--shadow-glow)', position: 'relative', overflow: 'hidden' }}>
             <div className="glow-orb glow-orb-purple" style={{ width: 300, height: 300, top: -100, left: '30%', opacity: 0.15 }} />
-            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', marginBottom: 16, position: 'relative' }}>Ready to level up your resume?</h2>
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: 32, position: 'relative' }}>Join thousands of job seekers who've already improved their resumes with AI.</p>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', marginBottom: 16, position: 'relative' }}>Ready to level up your writing?</h2>
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: 32, position: 'relative' }}>Join thousands of users who've already improved their content with AI.</p>
             <Link to="/register" className="btn btn-primary btn-lg" style={{ position: 'relative' }}>Get Started Free <ArrowRight size={18} /></Link>
           </motion.div>
         </div>
@@ -261,7 +260,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>AInalyzer</span>
               </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>The world's most advanced AI-powered resume analyzer. Land your dream job faster.</p>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>The world's most advanced AI-powered text analyzer. Write better, faster.</p>
             </div>
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 20 }}>Product</h4>

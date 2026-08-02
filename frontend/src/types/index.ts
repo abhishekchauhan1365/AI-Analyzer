@@ -19,23 +19,27 @@ export interface SkillCategory {
 }
 
 export interface AnalysisResult {
-  overallScore: number;
-  atsScore: number;
-  summary: string;
-  strengths: string[];
-  weaknesses: string[];
-  suggestions: string[];
-  skillCategories: SkillCategory[];
-  sections: {
+  overallScore?: number;
+  atsScore?: number;
+  summary?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  suggestions?: string[];
+  skillCategories?: SkillCategory[];
+  sections?: {
     experience: SectionScore;
     education: SectionScore;
     skills: SectionScore;
     formatting: SectionScore;
     summary: SectionScore;
   };
-  keywords: string[];
-  estimatedYearsExperience: number;
-  targetRoles: string[];
+  keywords?: string[];
+  estimatedYearsExperience?: number;
+  targetRoles?: string[];
+  sentiment?: string;
+  readabilityLevel?: string;
+  detectedTone?: string;
+  [key: string]: any;
 }
 
 export interface Analysis {
@@ -43,6 +47,8 @@ export interface Analysis {
   userId: string;
   fileName: string;
   fileSize: number;
+  inputType?: string;
+  analysisType?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   result?: AnalysisResult;
   errorMessage?: string;

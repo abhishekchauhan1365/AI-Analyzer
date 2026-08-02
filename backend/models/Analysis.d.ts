@@ -1,12 +1,13 @@
 import mongoose, { Document, Model } from 'mongoose';
-import type { AnalysisResult } from '../types/analysis.js';
 export interface IAnalysisDoc extends Document {
     userId: mongoose.Types.ObjectId;
     fileName: string;
     fileSize: number;
     mimeType: string;
+    analysisType: 'Resume' | 'Sentiment' | 'Grammar' | 'Readability' | 'Summarization' | 'Tone' | 'Code Review' | 'Custom';
+    inputType: 'pdf' | 'text';
     status: 'pending' | 'processing' | 'completed' | 'failed';
-    result?: AnalysisResult;
+    result?: any;
     errorMessage?: string;
     textContent?: string;
     createdAt: Date;

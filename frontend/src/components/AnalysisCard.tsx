@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Analysis } from '../types';
-import { FileText, Clock, CheckCircle, XCircle, Loader2, Trash2, ChevronRight } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Loader2, Trash2, ChevronRight, MessageSquare, FileCode2, GraduationCap, Briefcase } from 'lucide-react';
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -22,9 +22,23 @@ const getScoreColor = (score: number) => {
   return 'var(--color-error)';
 };
 
+const getAnalysisIcon = (type?: string) => {
+  switch (type) {
+    case 'Tone':
+    case 'Sentiment': return MessageSquare;
+    case 'Code Review': return FileCode2;
+    case 'Grammar':
+    case 'Readability':
+    case 'Summarization': return GraduationCap;
+    case 'Resume': 
+    default: return Briefcase;
+  }
+};
+
 const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onDelete }) => {
   const config = statusConfig[analysis.status];
   const StatusIcon = config.icon;
+  const TypeIcon = getAnalysisIcon(analysis.analysisType);
   const date = new Date(analysis.createdAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
@@ -45,7 +59,7 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onDelete }) => {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: '1px solid var(--color-border)',
         }}>
-          <FileText size={20} color="var(--color-primary-light)" />
+          <TypeIcon size={20} color="var(--color-primary-light)" />
         </div>
 
         {/* Info */}
@@ -54,21 +68,39 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onDelete }) => {
             {analysis.fileName}
           </p>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-            {date}
+            {date} {analysis.analysisType && `· ${analysis.analysisType}`}
           </p>
         </div>
 
-        {/* Score */}
+        {/* Score / Result Snippet */}
         {analysis.status === 'completed' && analysis.result && (
-          <div style={{ textAlign: 'center', flexShrink: 0 }}>
-            <p style={{
-              fontSize: '1.5rem', fontWeight: 800,
-              color: getScoreColor(analysis.result.overallScore),
-              lineHeight: 1,
-            }}>
-              {analysis.result.overallScore}
-            </p>
-            <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>/ 100</p>
+          <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 60 }}>
+            {analysis.analysisType === 'Sentiment' ? (
+              <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1 }}>
+                {analysis.result.sentiment || '—'}
+              </p>
+            ) : analysis.analysisType === 'Tone' ? (
+              <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1 }}>
+                {analysis.result.detectedTone || '—'}
+              </p>
+            ) : analysis.analysisType === 'Readability' ? (
+              <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1 }}>
+                {analysis.result.readabilityLevel || '—'}
+              </p>
+            ) : analysis.result.overallScore !== undefined ? (
+              <>
+                <p style={{
+                  fontSize: '1.5rem', fontWeight: 800,
+                  color: getScoreColor(analysis.result.overallScore),
+                  lineHeight: 1,
+                }}>
+                  {analysis.result.overallScore}
+                </p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>/ 100</p>
+              </>
+            ) : (
+              <CheckCircle size={24} color="var(--color-success)" style={{ margin: '0 auto' }} />
+            )}
           </div>
         )}
 

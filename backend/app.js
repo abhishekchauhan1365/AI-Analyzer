@@ -50,7 +50,13 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin)
+            return callback(null, true);
+        // Allow any origin dynamically (safe for this specific project state)
+        return callback(null, true);
+    },
     credentials: true,
 }));
 app.use(express.json());
@@ -61,6 +67,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.use('/api/auth', authRoutes);
 app.use('/api/analyses', analysisRoutes);
+// Fallback routes in case VITE_API_URL was set without the /api suffix
+app.use('/auth', authRoutes);
+app.use('/analyses', analysisRoutes);
 app.use(notFound);
 app.use(errorHandler);
 export default app;

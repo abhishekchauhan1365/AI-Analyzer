@@ -49,8 +49,9 @@ const AnalysisPage: React.FC = () => {
       `Overall Score: ${res.overallScore}/100\n` +
       `ATS Score: ${res.atsScore}/100\n\n` +
       `Executive Summary:\n${res.summary}\n\n` +
-      `Top Strengths:\n- ${res.strengths.slice(0, 3).join('\n- ')}\n\n` +
-      `Areas to Improve:\n- ${res.weaknesses.slice(0, 2).join('\n- ')}`
+      `Executive Summary:\n${res.summary || ''}\n\n` +
+      `Top Strengths:\n- ${(res.strengths || []).slice(0, 3).join('\n- ')}\n\n` +
+      `Areas to Improve:\n- ${(res.weaknesses || []).slice(0, 2).join('\n- ')}`
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
@@ -107,16 +108,15 @@ const AnalysisPage: React.FC = () => {
 
   const result = currentAnalysis.result!;
 
-  // Radar chart data
-  const radarData = [
-    { subject: 'Experience', value: result.sections.experience.score },
-    { subject: 'Education', value: result.sections.education.score },
-    { subject: 'Skills', value: result.sections.skills.score },
-    { subject: 'Format', value: result.sections.formatting.score },
-    { subject: 'Summary', value: result.sections.summary.score },
-  ];
+  const radarData = result.sections ? [
+    { subject: 'Experience', value: result.sections.experience?.score || 0 },
+    { subject: 'Education', value: result.sections.education?.score || 0 },
+    { subject: 'Skills', value: result.sections.skills?.score || 0 },
+    { subject: 'Format', value: result.sections.formatting?.score || 0 },
+    { subject: 'Summary', value: result.sections.summary?.score || 0 },
+  ] : [];
 
-  const sectionsList = Object.values(result.sections);
+  const sectionsList = result.sections ? Object.values(result.sections) : [];
 
   return (
     <div className="container" style={{ padding: '40px 24px', maxWidth: 1400 }}>
@@ -126,8 +126,14 @@ const AnalysisPage: React.FC = () => {
           <ArrowLeft size={16} /> Dashboard
         </Link>
         <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Key size={14} /> Copy Link
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={handleShareEmail} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Mail size={14} /> Share
+            <Mail size={14} /> Email
           </button>
           <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Download size={14} /> Save PDF
@@ -147,7 +153,8 @@ const AnalysisPage: React.FC = () => {
         <p className="text-muted" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Clock size={14} />
           Analyzed on {new Date(currentAnalysis.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-          {result.estimatedYearsExperience > 0 && ` · ~${result.estimatedYearsExperience} years experience`}
+          {currentAnalysis.analysisType && ` · ${currentAnalysis.analysisType} Analysis`}
+          {result.estimatedYearsExperience ? ` · ~${result.estimatedYearsExperience} years experience` : ''}
         </p>
       </motion.div>
 
@@ -158,15 +165,46 @@ const AnalysisPage: React.FC = () => {
         style={{ padding: 40, marginBottom: 32, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}
       >
         <div style={{ display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
-          <ScoreRing score={result.overallScore} size={160} label="Overall" />
-          <ScoreRing score={result.atsScore} size={130} label="ATS Score" color="#52525b" />
+          <ScoreRing score={result.overallScore || 0} size={160} label="Overall" />
+          
+          {currentAnalysis.analysisType === 'Resume' && result.atsScore !== undefined && (
+            <ScoreRing score={result.atsScore} size={130} label="ATS Score" color="#52525b" />
+          )}
+
+          {currentAnalysis.analysisType === 'Sentiment' && result.sentiment && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ padding: '16px 24px', borderRadius: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>{result.sentiment}</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Detected Sentiment</p>
+              </div>
+            </div>
+          )}
+
+          {currentAnalysis.analysisType === 'Readability' && result.readabilityLevel && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ padding: '16px 24px', borderRadius: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+                <p style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-primary)' }}>{result.readabilityLevel}</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Reading Level</p>
+              </div>
+            </div>
+          )}
+
+          {currentAnalysis.analysisType === 'Tone' && result.detectedTone && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ padding: '16px 24px', borderRadius: 16, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>{result.detectedTone}</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Primary Tone</p>
+              </div>
+            </div>
+          )}
+
           <div style={{ flex: 1, minWidth: 260 }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: 12, fontWeight: 700 }}>AI Executive Summary</h2>
             <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>{result.summary}</p>
-            {result.targetRoles.length > 0 && (
+            {result.targetRoles && result.targetRoles.length > 0 && (
               <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <Target size={16} color="var(--color-text-muted)" style={{ marginTop: 3, flexShrink: 0 }} />
-                {result.targetRoles.map((role) => (
+                {result.targetRoles.map((role: string) => (
                   <SkillBadge key={role} skill={role} variant="purple" />
                 ))}
               </div>
@@ -175,65 +213,71 @@ const AnalysisPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* ATS Job Match Tool */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-        style={{ marginBottom: 32 }}
-      >
-        <JobMatchTool analysisId={id!} />
-      </motion.div>
+      {/* Resume Specific Tools & Charts */}
+      {currentAnalysis.analysisType === 'Resume' && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+            style={{ marginBottom: 32 }}
+          >
+            <JobMatchTool analysisId={id!} />
+          </motion.div>
 
-      {/* Charts + Sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
-        {/* Radar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="glass-card" style={{ padding: 32 }}
-        >
-          <h2 style={{ fontSize: '1.1rem', marginBottom: 24, fontWeight: 700 }}>Competency Radar</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="var(--color-border)" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600 }} />
-              <Radar name="Score" dataKey="value" stroke="var(--color-primary)" fill="var(--color-primary-light)" fillOpacity={0.15} strokeWidth={2} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </motion.div>
+          {radarData && radarData[0]?.value !== undefined && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
+              {/* Radar */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                className="glass-card" style={{ padding: 32 }}
+              >
+                <h2 style={{ fontSize: '1.1rem', marginBottom: 24, fontWeight: 700 }}>Competency Radar</h2>
+                <ResponsiveContainer width="100%" height={260}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="var(--color-border)" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600 }} />
+                    <Radar name="Score" dataKey="value" stroke="var(--color-primary)" fill="var(--color-primary-light)" fillOpacity={0.15} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </motion.div>
 
-        {/* Bar chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="glass-card" style={{ padding: 32 }}
-        >
-          <h2 style={{ fontSize: '1.1rem', marginBottom: 24, fontWeight: 700 }}>Detailed Section Scores</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={radarData} barSize={32} layout="vertical">
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--color-text-subtle)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="subject" tick={{ fill: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={80} />
-              <Tooltip
-                contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 12, color: 'var(--color-text)', boxShadow: 'var(--shadow-sm)' }}
-                cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-              />
-              <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                {radarData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
+              {/* Bar chart */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="glass-card" style={{ padding: 32 }}
+              >
+                <h2 style={{ fontSize: '1.1rem', marginBottom: 24, fontWeight: 700 }}>Detailed Section Scores</h2>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={radarData} barSize={32} layout="vertical">
+                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--color-text-subtle)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="subject" tick={{ fill: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={80} />
+                    <Tooltip
+                      contentStyle={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 12, color: 'var(--color-text)', boxShadow: 'var(--shadow-sm)' }}
+                      cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                    />
+                    <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                      {radarData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </motion.div>
+            </div>
+          )}
 
-      {/* Section breakdown */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="glass-card" style={{ padding: 28, marginBottom: 28 }}
-      >
-        <h2 style={{ fontSize: '1rem', marginBottom: 24 }}>Section Breakdown</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28 }}>
-          {sectionsList.map((s) => <SectionScore key={s.name} {...s} />)}
-        </div>
-      </motion.div>
+          {sectionsList && sectionsList.length > 0 && sectionsList[0] !== undefined && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+              className="glass-card" style={{ padding: 28, marginBottom: 28 }}
+            >
+              <h2 style={{ fontSize: '1rem', marginBottom: 24 }}>Section Breakdown</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28 }}>
+                {sectionsList.map((s: any) => <SectionScore key={s?.name} {...s} />)}
+              </div>
+            </motion.div>
+          )}
+        </>
+      )}
 
       {/* Strengths + Weaknesses */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
@@ -245,12 +289,12 @@ const AnalysisPage: React.FC = () => {
             <CheckCircle size={18} color="var(--color-success)" /> Strengths
           </h2>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 10, listStyle: 'none' }}>
-            {result.strengths.map((s, i) => (
+            {result.strengths && result.strengths.length > 0 ? result.strengths.map((s: string, i: number) => (
               <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ color: 'var(--color-success)', fontWeight: 700, marginTop: 1, flexShrink: 0 }}>✓</span>
                 <span style={{ fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--color-text-muted)' }}>{s}</span>
               </li>
-            ))}
+            )) : <p className="text-muted" style={{ fontSize: '0.875rem' }}>No strengths found.</p>}
           </ul>
         </motion.div>
 
@@ -262,15 +306,15 @@ const AnalysisPage: React.FC = () => {
             <XCircle size={18} color="var(--color-warning)" /> Areas to Improve
           </h2>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 10, listStyle: 'none' }}>
-            {result.weaknesses.map((w, i) => (
+            {result.weaknesses && result.weaknesses.length > 0 ? result.weaknesses.map((w: string, i: number) => (
               <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span style={{ color: 'var(--color-warning)', fontWeight: 700, marginTop: 1, flexShrink: 0 }}>!</span>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--color-text-muted)' }}>{w}</span>
-                  <RewriteAssistant originalText={w} />
+                  {currentAnalysis.analysisType === 'Resume' && <RewriteAssistant originalText={w} />}
                 </div>
               </li>
-            ))}
+            )) : <p className="text-muted" style={{ fontSize: '0.875rem' }}>No weaknesses found.</p>}
           </ul>
         </motion.div>
       </div>
@@ -284,7 +328,7 @@ const AnalysisPage: React.FC = () => {
           <Lightbulb size={20} color="var(--color-text)" /> Strategic AI Recommendations
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {result.suggestions.map((s, i) => (
+          {result.suggestions && result.suggestions.map((s: string, i: number) => (
             <div key={i} style={{
               display: 'flex', gap: 16, alignItems: 'flex-start',
               padding: '16px 20px', borderRadius: 'var(--radius-md)',
@@ -305,22 +349,24 @@ const AnalysisPage: React.FC = () => {
 
       {/* Skills + Keywords */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-          className="glass-card" style={{ padding: 28 }}
-        >
-          <h2 style={{ fontSize: '1rem', marginBottom: 16 }}>Skills Found</h2>
-          {result.skillCategories.map(({ category, skills }) => (
-            <div key={category} style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                {category}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {skills.map((s) => <SkillBadge key={s} skill={s} variant="purple" />)}
+        {result.skillCategories && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+            className="glass-card" style={{ padding: 28 }}
+          >
+            <h2 style={{ fontSize: '1rem', marginBottom: 16 }}>Skills Found</h2>
+            {result.skillCategories.map(({ category, skills }: any) => (
+              <div key={category} style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  {category}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {skills.map((s: string) => <SkillBadge key={s} skill={s} variant="purple" />)}
+                </div>
               </div>
-            </div>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
@@ -330,7 +376,7 @@ const AnalysisPage: React.FC = () => {
             <Key size={16} color="var(--color-text-muted)" /> ATS Keywords Detected
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {result.keywords.map((k) => <SkillBadge key={k} skill={k} variant="cyan" />)}
+            {result.keywords && result.keywords.length > 0 ? result.keywords.map((k: string) => <SkillBadge key={k} skill={k} variant="cyan" />) : <span className="text-muted">No keywords detected</span>}
           </div>
           <p className="text-muted" style={{ fontSize: '0.78rem', marginTop: 16, lineHeight: 1.6 }}>
             These keywords were found in your resume and help pass ATS filters. Make sure they match the job description.

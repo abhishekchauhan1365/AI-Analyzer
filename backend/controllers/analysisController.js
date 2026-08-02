@@ -1,7 +1,7 @@
 import multer from 'multer';
 import { Analysis } from '../models/Analysis.js';
 import { extractTextFromPDF } from '../services/pdfService.js';
-import { analyzeResume, streamChatWithContext } from '../services/geminiService.js';
+import { analyzeText, streamChatWithContext } from '../services/geminiService.js';
 import { getCache, setCache, deleteCache } from '../services/cacheService.js';
 import { AppError } from '../utils/AppError.js';
 // Multer config — memory storage (no disk I/O)
@@ -23,26 +23,35 @@ export const upload = multer({
  */
 export const uploadAndAnalyze = async (req, res, next) => {
     try {
-        if (!req.file) {
-            return next(new AppError('Please upload a PDF file.', 400));
+        const textContentRaw = req.body.text;
+        const analysisType = req.body.analysisType || 'Resume';
+        if (!req.file && !textContentRaw) {
+            return next(new AppError('Please upload a PDF file or provide text to analyze.', 400));
         }
         const userId = req.user._id.toString();
-        const { originalname, size, buffer } = req.file;
+        const fileName = req.file ? req.file.originalname : 'Text Input';
+        const fileSize = req.file ? req.file.size : textContentRaw.length;
+        const inputType = req.file ? 'pdf' : 'text';
         // Create analysis record with pending status
         const analysis = await Analysis.create({
             userId,
-            fileName: originalname,
-            fileSize: size,
+            fileName,
+            fileSize,
+            inputType,
+            analysisType,
             status: 'processing',
         });
         // Process asynchronously but respond immediately with the record
         (async () => {
             try {
-                const text = await extractTextFromPDF(buffer);
-                const result = await analyzeResume(text);
+                let extractedText = textContentRaw;
+                if (req.file) {
+                    extractedText = await extractTextFromPDF(req.file.buffer);
+                }
+                const result = await analyzeText(extractedText, analysisType);
                 analysis.status = 'completed';
                 analysis.result = result;
-                analysis.textContent = text;
+                analysis.textContent = extractedText;
                 await analysis.save();
                 // Invalidate user's analysis list cache
                 await deleteCache(`analyses:user:${userId}`);
@@ -187,9 +196,35 @@ export const chatWithDocument = async (req, res, next) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         res.flushHeaders();
+        // 1. Get or create the chat session
+        const { ChatSession } = await import('../models/ChatSession.js');
+        let chatSession = await ChatSession.findOne({ userId, analysisId: analysis._id });
+        if (!chatSession) {
+            chatSession = new ChatSession({ userId, analysisId: analysis._id, messages: [] });
+        }
+        // Add the new user message to the session
+        const latestUserMessage = messages[messages.length - 1];
+        if (latestUserMessage && latestUserMessage.role === 'user') {
+            chatSession.messages.push({
+                role: 'user',
+                content: latestUserMessage.content,
+                timestamp: new Date()
+            });
+        }
         const stream = streamChatWithContext(analysis.textContent, messages);
+        let fullAssistantResponse = '';
         for await (const chunk of stream) {
+            fullAssistantResponse += chunk;
             res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+        }
+        // Save the assistant's full response to the database
+        if (fullAssistantResponse) {
+            chatSession.messages.push({
+                role: 'assistant',
+                content: fullAssistantResponse,
+                timestamp: new Date()
+            });
+            await chatSession.save();
         }
         res.write('data: [DONE]\n\n');
         res.end();
@@ -200,6 +235,74 @@ export const chatWithDocument = async (req, res, next) => {
         console.error('Streaming error:', error);
         res.write(`data: ${JSON.stringify({ error: 'An error occurred during generation.' })}\n\n`);
         res.end();
+    }
+};
+/**
+ * POST /api/analyses/:id/match
+ * Generate ATS match score against a job description or target role
+ */
+export const matchJobDescription = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { targetRole, jobDescriptionText } = req.body;
+        const userId = req.user._id.toString();
+        if (!targetRole && !jobDescriptionText) {
+            return next(new AppError('Please provide either a targetRole or jobDescriptionText.', 400));
+        }
+        // 1. Get the original resume text
+        const analysis = await Analysis.findOne({ _id: id, userId }).select('+textContent');
+        if (!analysis || !analysis.textContent) {
+            return next(new AppError('Analysis not found or still processing.', 404));
+        }
+        // 2. Import JobMatch dynamically to avoid circular dependencies if any, though it should be at the top.
+        // For now, let's just require it since we didn't add it to imports at the top.
+        const { JobMatch } = await import('../models/JobMatch.js');
+        // 3. Check if we already ran this exact match
+        const existingMatch = await JobMatch.findOne({
+            userId,
+            analysisId: analysis._id,
+            ...(targetRole ? { targetRole } : {}),
+            ...(jobDescriptionText ? { jobDescriptionText } : {}),
+        });
+        if (existingMatch) {
+            return res.json({ success: true, data: existingMatch });
+        }
+        // 4. Generate the match via Gemini
+        const { generateJobMatch } = await import('../services/geminiService.js');
+        const matchResult = await generateJobMatch(analysis.textContent, targetRole, jobDescriptionText);
+        // 5. Save to database
+        const newMatch = await JobMatch.create({
+            userId,
+            analysisId: analysis._id,
+            targetRole,
+            jobDescriptionText,
+            matchScore: matchResult.matchScore,
+            missingKeywords: matchResult.missingKeywords,
+            tailoredSuggestions: matchResult.tailoredSuggestions,
+        });
+        res.status(201).json({ success: true, data: newMatch });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+/**
+ * GET /api/analyses/:id/chats
+ * Retrieve the chat history for a specific analysis
+ */
+export const getChatHistory = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id.toString();
+        const { ChatSession } = await import('../models/ChatSession.js');
+        const chatSession = await ChatSession.findOne({ userId, analysisId: id });
+        if (!chatSession) {
+            return res.json({ success: true, data: [] });
+        }
+        res.json({ success: true, data: chatSession.messages });
+    }
+    catch (error) {
+        next(error);
     }
 };
 //# sourceMappingURL=analysisController.js.map

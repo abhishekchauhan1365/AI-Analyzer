@@ -3,7 +3,7 @@ import multer from 'multer';
 import type { AuthRequest } from '../middlewares/authMiddleware.js';
 import { Analysis } from '../models/Analysis.js';
 import { extractTextFromPDF } from '../services/pdfService.js';
-import { analyzeResume, streamChatWithContext } from '../services/geminiService.js';
+import { analyzeText, streamChatWithContext } from '../services/geminiService.js';
 import { getCache, setCache, deleteCache } from '../services/cacheService.js';
 import { AppError } from '../utils/AppError.js';
 
@@ -30,30 +30,41 @@ export const uploadAndAnalyze = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.file) {
-      return next(new AppError('Please upload a PDF file.', 400));
+    const textContentRaw = req.body.text;
+    const analysisType = req.body.analysisType || 'Resume';
+
+    if (!req.file && !textContentRaw) {
+      return next(new AppError('Please upload a PDF file or provide text to analyze.', 400));
     }
 
     const userId = req.user!._id.toString();
-    const { originalname, size, buffer } = req.file;
+    const fileName = req.file ? req.file.originalname : 'Text Input';
+    const fileSize = req.file ? req.file.size : textContentRaw.length;
+    const inputType = req.file ? 'pdf' : 'text';
 
     // Create analysis record with pending status
     const analysis = await Analysis.create({
       userId,
-      fileName: originalname,
-      fileSize: size,
+      fileName,
+      fileSize,
+      inputType,
+      analysisType,
       status: 'processing',
     });
 
     // Process asynchronously but respond immediately with the record
     (async () => {
       try {
-        const text = await extractTextFromPDF(buffer);
-        const result = await analyzeResume(text);
+        let extractedText = textContentRaw;
+        if (req.file) {
+          extractedText = await extractTextFromPDF(req.file.buffer);
+        }
+        
+        const result = await analyzeText(extractedText, analysisType);
 
         analysis.status = 'completed';
         analysis.result = result;
-        analysis.textContent = text;
+        analysis.textContent = extractedText;
         await analysis.save();
 
         // Invalidate user's analysis list cache

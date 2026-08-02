@@ -1,8 +1,14 @@
 {
-  "name": "ai-analyzer-root",
-  "private": true,
-  "type": "module",
+  "name": "ai-analyzer",
+  "version": "1.0.0",
+  "description": "AI Resume Analyzer",
+  "main": "index.js",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
   }
 }
