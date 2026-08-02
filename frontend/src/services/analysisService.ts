@@ -36,6 +36,11 @@ export const analysisService = {
     await api.delete(`/analyses/${id}`);
   },
 
+  generateMatch: async (id: string, targetRole?: string, jobDescriptionText?: string): Promise<any> => {
+    const res = await api.post(`/analyses/${id}/match`, { targetRole, jobDescriptionText });
+    return res.data.data;
+  },
+
   streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[]): AsyncGenerator<string, void, unknown> {
     const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
     const response = await fetch(`${baseUrl}/analyses/${id}/chat`, {

@@ -258,3 +258,64 @@ export const chatWithDocument = async (
     res.end();
   }
 };
+
+/**
+ * POST /api/analyses/:id/match
+ * Generate ATS match score against a job description or target role
+ */
+export const matchJobDescription = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { targetRole, jobDescriptionText } = req.body;
+    const userId = req.user!._id.toString();
+
+    if (!targetRole && !jobDescriptionText) {
+      return next(new AppError('Please provide either a targetRole or jobDescriptionText.', 400));
+    }
+
+    // 1. Get the original resume text
+    const analysis = await Analysis.findOne({ _id: id as string, userId }).select('+textContent');
+    if (!analysis || !analysis.textContent) {
+      return next(new AppError('Analysis not found or still processing.', 404));
+    }
+
+    // 2. Import JobMatch dynamically to avoid circular dependencies if any, though it should be at the top.
+    // For now, let's just require it since we didn't add it to imports at the top.
+    const { JobMatch } = await import('../models/JobMatch.js');
+
+    // 3. Check if we already ran this exact match
+    const existingMatch = await JobMatch.findOne({
+      userId,
+      analysisId: analysis._id,
+      ...(targetRole ? { targetRole } : {}),
+      ...(jobDescriptionText ? { jobDescriptionText } : {}),
+    });
+
+    if (existingMatch) {
+      return res.json({ success: true, data: existingMatch });
+    }
+
+    // 4. Generate the match via Gemini
+    const { generateJobMatch } = await import('../services/geminiService.js');
+    const matchResult = await generateJobMatch(analysis.textContent, targetRole, jobDescriptionText);
+
+    // 5. Save to database
+    const newMatch = await JobMatch.create({
+      userId,
+      analysisId: analysis._id,
+      targetRole,
+      jobDescriptionText,
+      matchScore: matchResult.matchScore,
+      missingKeywords: matchResult.missingKeywords,
+      tailoredSuggestions: matchResult.tailoredSuggestions,
+    });
+
+    res.status(201).json({ success: true, data: newMatch });
+  } catch (error) {
+    next(error);
+  }
+};

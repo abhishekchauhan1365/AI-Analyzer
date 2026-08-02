@@ -218,3 +218,68 @@ USER QUESTION: ${msg.content}`;
     yield "Sorry, I encountered an error while trying to answer that.";
   }
 };
+
+export interface JobMatchResult {
+  matchScore: number;
+  missingKeywords: string[];
+  tailoredSuggestions: string[];
+}
+
+export const generateJobMatch = async (
+  resumeText: string,
+  targetRole?: string,
+  jobDescriptionText?: string
+): Promise<JobMatchResult> => {
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      matchScore: 65,
+      missingKeywords: ['Agile', 'GraphQL', 'AWS'],
+      tailoredSuggestions: ['Add metrics to your recent role.', 'Highlight leadership experience.'],
+    };
+  }
+
+  const roleOrJdContext = jobDescriptionText
+    ? `JOB DESCRIPTION:\n---\n${jobDescriptionText}\n---`
+    : `TARGET ROLE: ${targetRole}`;
+
+  const prompt = `
+You are an expert ATS (Applicant Tracking System) and technical recruiter. 
+Compare the provided Resume against the provided Job Description or Target Role.
+
+Calculate a match score from 0 to 100 representing how well this candidate fits the role.
+Extract a list of critical missing keywords that the ATS would look for but are absent in the resume.
+Provide 3-5 specific, tailored suggestions on how to modify the resume to increase the match score.
+
+Return ONLY a valid JSON object with the exact structure below. Do not use markdown fences.
+{
+  "matchScore": <integer 0-100>,
+  "missingKeywords": ["<keyword1>", "<keyword2>"],
+  "tailoredSuggestions": ["<suggestion1>", "<suggestion2>"]
+}
+
+${roleOrJdContext}
+
+RESUME TEXT:
+---
+${resumeText}
+---
+`;
+
+  try {
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const model = genAI.models;
+    
+    const response = await model.generateContent({
+      model: 'gemini-3.5-flash-lite',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: { temperature: 0.2 },
+    });
+
+    const rawText = response.text ?? '';
+    const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    return JSON.parse(cleaned) as JobMatchResult;
+  } catch (error) {
+    console.error('[GeminiService] Error calling Gemini for Job Match:', error);
+    throw new Error('Failed to generate Job Match score');
+  }
+};

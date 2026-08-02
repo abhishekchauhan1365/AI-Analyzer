@@ -14,6 +14,7 @@ import SectionScore from '../components/SectionScore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DocumentChat from '../components/DocumentChat';
 import RewriteAssistant from '../components/RewriteAssistant';
+import JobMatchTool from '../components/JobMatchTool';
 import { ArrowLeft, CheckCircle, XCircle, Lightbulb, Key, Target, Trash2, BrainCircuit, Clock, Download, Mail } from 'lucide-react';
 
 const CHART_COLORS = ['#18181b', '#3f3f46', '#52525b', '#71717a', '#a1a1aa'];
@@ -172,6 +173,14 @@ const AnalysisPage: React.FC = () => {
             )}
           </div>
         </div>
+      </motion.div>
+
+      {/* ATS Job Match Tool */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        style={{ marginBottom: 32 }}
+      >
+        <JobMatchTool analysisId={id!} />
       </motion.div>
 
       {/* Charts + Sections */}

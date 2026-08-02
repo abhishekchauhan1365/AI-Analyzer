@@ -8,6 +8,7 @@ import {
   getAnalysisStatus,
   deleteAnalysis,
   chatWithDocument,
+  matchJobDescription,
 } from '../controllers/analysisController.js';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.get('/', getMyAnalyses);
 router.get('/:id', getAnalysisById);
 router.get('/:id/status', getAnalysisStatus);
 router.post('/:id/chat', chatWithDocument);
+router.post('/:id/match', matchJobDescription);
 router.delete('/:id', deleteAnalysis);
 
 export default router;
