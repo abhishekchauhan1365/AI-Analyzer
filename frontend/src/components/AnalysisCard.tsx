@@ -31,7 +31,9 @@ const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onDelete }) => {
 
   return (
     <motion.div
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className="glass-card"
       style={{ padding: '20px 24px', position: 'relative' }}
     >
