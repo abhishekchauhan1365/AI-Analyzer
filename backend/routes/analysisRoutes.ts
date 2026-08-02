@@ -9,6 +9,7 @@ import {
   deleteAnalysis,
   chatWithDocument,
   matchJobDescription,
+  getChatHistory,
 } from '../controllers/analysisController.js';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.post('/upload', upload.single('resume'), uploadAndAnalyze);
 router.get('/', getMyAnalyses);
 router.get('/:id', getAnalysisById);
 router.get('/:id/status', getAnalysisStatus);
+router.get('/:id/chats', getChatHistory);
 router.post('/:id/chat', chatWithDocument);
 router.post('/:id/match', matchJobDescription);
 router.delete('/:id', deleteAnalysis);

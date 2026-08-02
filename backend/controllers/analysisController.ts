@@ -242,10 +242,41 @@ export const chatWithDocument = async (
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
+    // 1. Get or create the chat session
+    const { ChatSession } = await import('../models/ChatSession.js');
+    let chatSession = await ChatSession.findOne({ userId, analysisId: analysis._id });
+    
+    if (!chatSession) {
+      chatSession = new ChatSession({ userId, analysisId: analysis._id, messages: [] });
+    }
+
+    // Add the new user message to the session
+    const latestUserMessage = messages[messages.length - 1];
+    if (latestUserMessage && latestUserMessage.role === 'user') {
+      chatSession.messages.push({
+        role: 'user',
+        content: latestUserMessage.content,
+        timestamp: new Date()
+      });
+    }
+
     const stream = streamChatWithContext(analysis.textContent, messages);
 
+    let fullAssistantResponse = '';
+
     for await (const chunk of stream) {
+      fullAssistantResponse += chunk;
       res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+
+    // Save the assistant's full response to the database
+    if (fullAssistantResponse) {
+      chatSession.messages.push({
+        role: 'assistant',
+        content: fullAssistantResponse,
+        timestamp: new Date()
+      });
+      await chatSession.save();
     }
 
     res.write('data: [DONE]\n\n');
@@ -315,6 +346,32 @@ export const matchJobDescription = async (
     });
 
     res.status(201).json({ success: true, data: newMatch });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/analyses/:id/chats
+ * Retrieve the chat history for a specific analysis
+ */
+export const getChatHistory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!._id.toString();
+
+    const { ChatSession } = await import('../models/ChatSession.js');
+    const chatSession = await ChatSession.findOne({ userId, analysisId: id as string });
+
+    if (!chatSession) {
+      return res.json({ success: true, data: [] });
+    }
+
+    res.json({ success: true, data: chatSession.messages });
   } catch (error) {
     next(error);
   }

@@ -23,7 +23,29 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const history = await analysisService.getChatHistory(analysisId);
+        if (history && history.length > 0) {
+          const formattedHistory = history.map((msg, i) => ({
+            id: `history-${i}`,
+            role: msg.role,
+            content: msg.content,
+          }));
+          setMessages(formattedHistory);
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    fetchHistory();
+  }, [analysisId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,7 +138,13 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
         overflowY: 'auto',
         display: 'flex', flexDirection: 'column', gap: 16
       }}>
-        {messages.map((msg) => (
+        {isInitializing ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <Loader2 size={24} className="spin text-gray-400" />
+          </div>
+        ) : (
+          <>
+            {messages.map((msg) => (
           <motion.div
             key={msg.id}
             initial={{ opacity: 0, y: 10 }}
@@ -180,6 +208,8 @@ const DocumentChat: React.FC<DocumentChatProps> = ({ analysisId }) => {
           </motion.div>
         )}
         <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {/* Input Form */}

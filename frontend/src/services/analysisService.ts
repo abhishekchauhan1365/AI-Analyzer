@@ -41,6 +41,11 @@ export const analysisService = {
     return res.data.data;
   },
 
+  getChatHistory: async (id: string): Promise<{ role: 'user'|'assistant', content: string }[]> => {
+    const res = await api.get(`/analyses/${id}/chats`);
+    return res.data.data || [];
+  },
+
   streamChat: async function* (id: string, messages: { role: 'user'|'assistant', content: string }[]): AsyncGenerator<string, void, unknown> {
     const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
     const response = await fetch(`${baseUrl}/analyses/${id}/chat`, {
